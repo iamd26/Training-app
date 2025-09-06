@@ -113,7 +113,7 @@
           <label>Squat 1RM <input id="sq" type="number" inputmode="decimal" placeholder="kg"></label>
           <label>Bench 1RM <input id="bp" type="number" inputmode="decimal" placeholder="kg"></label>
           <label>Deadlift 1RM <input id="dl" type="number" inputmode="decimal" placeholder="kg"></label>
-          <label>OHP 1RM <input id="ohp" type="number" inputmode="decimal" placeholder="kg"></label>
+          <label>OHP 1RM <input id="cln" type="number" inputmode="decimal" placeholder="kg"></label>
         </div>
         <div class="row" style="margin-top:6px">
           <label class="switch"><input id="useTM" type="checkbox">Use Training Max (90%)</label>
@@ -182,7 +182,7 @@
         {w:11,s:"5×2–3 @85%",p:[85]},{w:12,s:"5×2 @87.5%",p:[87.5]},{w:13,s:"4×2 @90%",p:[90]},{w:14,s:"3×1–2 @92.5%",p:[92.5]},
         {w:15,s:"Test 1RM",p:[]}
       ],
-      OHP:[
+      CLN:[
         {w:1,s:"4×8 @60–62.5%",p:[61.25]},{w:2,s:"4×8 @65%",p:[65]},{w:3,s:"5×6 @67.5%",p:[67.5]},{w:4,s:"4×6 @70%",p:[70]},
         {w:5,s:"3×5 @55–60%",p:[57.5]},
         {w:6,s:"5×5 @70%",p:[70]},{w:7,s:"5×4 @75%",p:[75]},{w:8,s:"6×3 @77.5–80%",p:[78.75]},{w:9,s:"5×3 @82.5%",p:[82.5]},
@@ -191,10 +191,136 @@
         {w:15,s:"Test 1RM",p:[]}
       ]
     };
-    const lifts = ["SQ","BP","DL","OHP"];
-    const names = {SQ:"Back Squat", BP:"Bench Press", DL:"Deadlift", OHP:"Overhead Press"};
+    const lifts = ["SQ","BP","DL","CLN"];
+    const names = {SQ:"Back Squat", BP:"Bench Press", DL:"Deadlift", OHP:"Clean"};
 
     // Helpers
+
+// --- Tailored warm-up schemes by lift ---
+// Returns an array of {pct, reps} entries based on target work % and the lift
+function warmupsFor(liftKey, targetPct){
+  // fall back if unknown or very light target
+  const t = targetPct || 60;
+  if(liftKey === 'SQ'){
+    // Squat: more gradual ramp
+    if(t <= 65) return [{pct:40,reps:5},{pct:55,reps:3}];
+    if(t <= 75) return [{pct:40,reps:5},{pct:55,reps:3},{pct:65,reps:2}];
+    if(t <= 85) return [{pct:40,reps:5},{pct:55,reps:3},{pct:65,reps:2},{pct:75,reps:1}];
+    return [{pct:40,reps:5},{pct:55,reps:3},{pct:65,reps:2},{pct:75,reps:1},{pct:85,reps:1}];
+  }
+  if(liftKey === 'BP'){
+    // Bench: smaller jumps
+    if(t <= 65) return [{pct:40,reps:8},{pct:50,reps:5}];
+    if(t <= 75) return [{pct:40,reps:8},{pct:50,reps:5},{pct:60,reps:3}];
+    if(t <= 85) return [{pct:40,reps:8},{pct:50,reps:5},{pct:60,reps:3},{pct:70,reps:1}];
+    return [{pct:40,reps:8},{pct:50,reps:5},{pct:60,reps:3},{pct:70,reps:1},{pct:80,reps:1}];
+  }
+  if(liftKey === 'DL'){
+    // Deadlift: fewer warm-ups to spare back
+    if(t <= 65) return [{pct:45,reps:5},{pct:60,reps:3}];
+    if(t <= 75) return [{pct:45,reps:5},{pct:60,reps:3},{pct:70,reps:1}];
+    if(t <= 85) return [{pct:45,reps:5},{pct:60,reps:3},{pct:70,reps:1},{pct:80,reps:1}];
+    return [{pct:45,reps:5},{pct:60,reps:3},{pct:70,reps:1},{pct:80,reps:1},{pct:85,reps:1}];
+  }
+  if(liftKey === 'CLN'){
+    // Clean: technical ladder
+    if(t <= 65) return [{pct:40,reps:3},{pct:50,reps:2},{pct:60,reps:2}];
+    if(t <= 75) return [{pct:40,reps:3},{pct:50,reps:2},{pct:60,reps:2},{pct:70,reps:1}];
+    if(t <= 85) return [{pct:40,reps:3},{pct:50,reps:2},{pct:60,reps:2},{pct:70,reps:1},{pct:80,reps:1}];
+    return [{pct:40,reps:3},{pct:50,reps:2},{pct:60,reps:2},{pct:70,reps:1},{pct:80,reps:1},{pct:85,reps:1}];
+  }
+  // default
+  return [{pct:40,reps:5},{pct:55,reps:3}];
+}
+
+// Build detailed set lines given target %s and oneRM
+function setLines(liftKey, weekItem, oneRMs, toLb){
+  const one = oneRMs[liftKey]||0;
+  const workPcts = (weekItem.p||[]);
+  const target = workPcts.length ? workPcts[0] : 60;
+  const warms = warmupsFor(liftKey, target);
+  const warmLines = warms.map(wu=>{
+    const load = roundLoad(one*wu.pct/100, toLb);
+    return `${wu.pct}% × ${wu.reps} → <b>${fmt(load,toLb)} ${toLb?'lb':'kg'}</b>`;
+  });
+  // Work sets description from s + calculated loads
+  let workLines = [];
+  if(workPcts.length===1){
+    const p = workPcts[0];
+    const repsMatch = (weekItem.s.match(/×(\d+)\s*@/) || [null, null])[1]; // get reps if present
+    const reps = repsMatch ? parseInt(repsMatch,10) : null;
+    const setsMatch = (weekItem.s.match(/(\d+)\s*×/) || [null, null])[1];
+    const sets = setsMatch ? parseInt(setsMatch,10) : null;
+    const load = roundLoad(one*p/100, toLb);
+    if(sets && reps){
+      workLines.push(`${sets}×${reps} @ ${p}% → <b>${fmt(load,toLb)} ${toLb?'lb':'kg'}</b>`);
+    } else {
+      workLines.push(`${weekItem.s} → <b>${fmt(load,toLb)} ${toLb?'lb':'kg'}</b>`);
+    }
+  }else if(workPcts.length>1){
+    workLines = workPcts.map(p=>{
+      const load = roundLoad(one*p/100, toLb);
+      return `@ ${p}% → <b>${fmt(load,toLb)} ${toLb?'lb':'kg'}</b>`;
+    });
+    workLines.unshift(weekItem.s);
+  }else{
+    workLines = [weekItem.s];
+  }
+  return {warmLines, workLines};
+}
+
+
+// --- YouTube tutorials map ---
+const YT = {
+  "Back Squat":"https://www.youtube.com/watch?v=ultWZbUMPL8",
+  "Front Squat":"https://www.youtube.com/watch?v=tlfahNdNPPI",
+  "Hack Squat":"https://www.youtube.com/watch?v=RPR3eT6R9Cs",
+  "Romanian Deadlift":"https://www.youtube.com/watch?v=JCXUYuzwNrM",
+  "RDL":"https://www.youtube.com/watch?v=JCXUYuzwNrM",
+  "Deadlift":"https://www.youtube.com/watch?v=op9kVnSso6Q",
+  "Bench Press":"https://www.youtube.com/watch?v=gRVjAtPip0Y",
+  "Incline DB Bench":"https://www.youtube.com/watch?v=8iPEnn-ltC8",
+  "Clean":"https://www.youtube.com/watch?v=B-aVuyhvLHU",
+  "OHP":"https://www.youtube.com/watch?v=B-aVuyhvLHU",
+  "Push-Press":"https://www.youtube.com/watch?v=iaBVSJm78ko",
+  "Pull-up":"https://www.youtube.com/watch?v=eGo4IYlbE5g",
+  "Weighted Pull-ups":"https://www.youtube.com/watch?v=eGo4IYlbE5g",
+  "Barbell Row":"https://www.youtube.com/watch?v=vT2GjY_Umpw",
+  "Row":"https://www.youtube.com/watch?v=vT2GjY_Umpw",
+  "Hamstring Curl":"https://www.youtube.com/watch?v=Q27k6mG7FvI",
+  "Split Squat":"https://www.youtube.com/watch?v=2C-uNgKwPLE",
+  "Walking Lunge":"https://www.youtube.com/watch?v=1N0GZK7f3S8",
+  "Calf Raise":"https://www.youtube.com/watch?v=YMmgqO8Jo-k",
+  "Core (anti-flexion)":"https://www.youtube.com/watch?v=DTcEMyQpw2I",
+  "Carries":"https://www.youtube.com/watch?v=8g8LKs64h-0",
+  "Med-Ball Chest Pass":"https://www.youtube.com/watch?v=FhS7b2YqvSA",
+  "Med-Ball Scoop Toss":"https://www.youtube.com/watch?v=tiN9ZtG6u1g",
+  "Box Jump":"https://www.youtube.com/watch?v=52r_Ul5k03g",
+  "Countermovement Jump":"https://www.youtube.com/watch?v=IqE2w2nQ4t8",
+  "Jump Squat":"https://www.youtube.com/watch?v=VbTg8k8m6sI",
+  "Trap-bar Jump":"https://www.youtube.com/watch?v=jx2xU7s0W48",
+  "Pogo Hops":"https://www.youtube.com/watch?v=OUiAqG2YpGg",
+  "Bounds":"https://www.youtube.com/watch?v=Jf4fe2bC5mY",
+  "5-10-5":"https://www.youtube.com/watch?v=3vY1Z3K2CzY",
+  "Accelerations":"https://www.youtube.com/watch?v=JYg8hQw4uDM",
+  "MB Chest Pass":"https://www.youtube.com/watch?v=FhS7b2YqvSA",
+  "MB Scoop Toss":"https://www.youtube.com/watch?v=tiN9ZtG6u1g"
+};
+function linkify(name){
+  // If a known key appears in the string, wrap it with a link
+  for(const key of Object.keys(YT)){
+    if(name.toLowerCase().includes(key.toLowerCase())){
+      const url = YT[key];
+      // Return with anchor
+      return name.replace(new RegExp(key, 'i'), `<a href="${url}" target="_blank" rel="noopener">${key}</a>`);
+    }
+  }
+  return name;
+}
+function list(items){
+  return '<ul>'+items.map(x=>`<li>${linkify(x)}</li>`).join('')+'</ul>';
+}
+
     function roundLoad(x, toLb){ const step = toLb ? 5 : 2.5; return Math.round(x/step)*step; }
     function fmt(x, toLb){ return toLb ? (x*2.20462).toFixed(0) : x.toFixed(1); }
     function blockForWeek(w){ if(w>=1&&w<=4) return 1; if(w===5) return 'deload5'; if(w>=6&&w<=9) return 2; if(w===10) return 'deload10'; if(w>=11&&w<=14) return 3; if(w===15) return 'test15'; }
@@ -283,10 +409,10 @@
       let sq = parseFloat(document.getElementById('sq').value||0);
       let bp = parseFloat(document.getElementById('bp').value||0);
       let dl = parseFloat(document.getElementById('dl').value||0);
-      let ohp= parseFloat(document.getElementById('ohp').value||0);
+      let cln= parseFloat(document.getElementById('cln').value||0);
       const useTM = document.getElementById('useTM').checked;
-      if(useTM){ sq*=0.9; bp*=0.9; dl*=0.9; ohp*=0.9; }
-      const oneRMs = {SQ:sq, BP:bp, DL:dl, OHP:ohp};
+      if(useTM){ sq*=0.9; bp*=0.9; dl*=0.9; cln*=0.9; }
+      const oneRMs = {SQ:sq, BP:bp, DL:dl, CLN:cln};
 
       // Blurb headline
       let blurb = '';
@@ -312,6 +438,14 @@
         if(block===3) out += '<h4>Power</h4>'+list(['Jump Squats/Trap‑bar Jumps — 5–6×3 @20–30% 1RM']);
         const L = pctLoadsForWeek('SQ', w, oneRMs, toLb, seasoned);
         out += `<h4>Main — Back Squat</h4><div class="mono">${L.text}</div>`;
+        // Detailed sets for SQ
+        if(w !== 15){
+          const _wk = plan['SQ'][w-1];
+          const _det = setLines('SQ', _wk, oneRMs, toLb);
+          out += '<h5>Warm-up</h5>' + list(_det.warmLines);
+          out += '<h5>Work</h5>' + list(_det.workLines);
+        }
+    
         if(L.variant){ out += list([`Top: ${L.variant.top.reps} reps @ ${L.variant.top.p}% → <b>${L.loads.top} ${L.loads.unit}</b>`,`Back‑offs: ${L.variant.back.sets}×${L.variant.back.reps} @ ${L.variant.back.p}% → <b>${L.loads.bo} ${L.loads.unit}</b>`]); }
         else if(L.loads && L.loads.length){ out += list(L.loads); }
         if(block===1) out += '<h4>Accessories</h4>'+list(['RDL — 3–4×10 @60–65% DL 1RM','Split Squat/Lunge — 3×12/leg (DBs 25–35% SQ 1RM)','Calves — 2–3×12–15','Core anti‑flexion — 3 rounds']);
@@ -323,6 +457,14 @@
         out += '<h4>Power</h4>'+list(['Med‑Ball Chest Pass — 5×3 (3–5% BW)']);
         const L = pctLoadsForWeek('BP', w, oneRMs, toLb, seasoned);
         out += `<h4>Main — Bench Press</h4><div class="mono">${L.text}</div>`;
+        // Detailed sets for BP
+        if(w !== 15){
+          const _wk = plan['BP'][w-1];
+          const _det = setLines('BP', _wk, oneRMs, toLb);
+          out += '<h5>Warm-up</h5>' + list(_det.warmLines);
+          out += '<h5>Work</h5>' + list(_det.workLines);
+        }
+    
         if(L.variant){ out += list([`Top: ${L.variant.top.reps} reps @ ${L.variant.top.p}% → <b>${L.loads.top} ${L.loads.unit}</b>`,`Back‑offs: ${L.variant.back.sets}×${L.variant.back.reps} @ ${L.variant.back.p}% → <b>${L.loads.bo} ${L.loads.unit}</b>`]); }
         else if(L.loads && L.loads.length){ out += list(L.loads); }
         out += '<h4>Accessories</h4>'+list(['Incline DB Bench — 3–4×8–12 (~55–60% BP 1RM)','Row — 4×8–12 heavy','Triceps — 2–3×10–15']);
@@ -331,6 +473,14 @@
         out += '<h4>Power</h4>'+list(['Med‑Ball Scoop Toss — 4×3']);
         const L = pctLoadsForWeek('DL', w, oneRMs, toLb, seasoned);
         out += `<h4>Main — Deadlift</h4><div class="mono">${L.text}</div>`;
+        // Detailed sets for DL
+        if(w !== 15){
+          const _wk = plan['DL'][w-1];
+          const _det = setLines('DL', _wk, oneRMs, toLb);
+          out += '<h5>Warm-up</h5>' + list(_det.warmLines);
+          out += '<h5>Work</h5>' + list(_det.workLines);
+        }
+    
         if(L.variant){ out += list([`Top: ${L.variant.top.reps} reps @ ${L.variant.top.p}% → <b>${L.loads.top} ${L.loads.unit}</b>`,`Back‑offs: ${L.variant.back.sets}×${L.variant.back.reps} @ ${L.variant.back.p}% → <b>${L.loads.bo} ${L.loads.unit}</b>`]); }
         else if(L.loads && L.loads.length){ out += list(L.loads); }
         out += '<h4>Accessories</h4>'+list(['Front Squat/Hack — 3–4×6–10 @65–75%','Hamstring Curl — 3–4×10–15','Carries/anti‑rotation — 3 rounds']);
@@ -341,13 +491,39 @@
       if(day==='Upper B'){
         if(block===1) out += '<h4>Power</h4>'+list(['(Optional) Light MB work or push power 3×3']);
         if(block===2 || block===3) out += '<h4>Power</h4>'+list(['Push‑Press — 5×3 @60–70% OHP 1RM']);
-        const L = pctLoadsForWeek('OHP', w, oneRMs, toLb, seasoned);
-        out += `<h4>Main — Overhead Press</h4><div class="mono">${L.text}</div>`;
+        const L = pctLoadsForWeek('CLN', w, oneRMs, toLb, seasoned);
+        out += `<h4>Main — Clean</h4><div class="mono">${L.text}</div>`;
+        // Detailed sets for CLN
+        if(w !== 15){
+          const _wk = plan['CLN'][w-1];
+          const _det = setLines('CLN', _wk, oneRMs, toLb);
+          out += '<h5>Warm-up</h5>' + list(_det.warmLines);
+          out += '<h5>Work</h5>' + list(_det.workLines);
+        }
+    
         if(L.variant){ out += list([`Top: ${L.variant.top.reps} reps @ ${L.variant.top.p}% → <b>${L.loads.top} ${L.loads.unit}</b>`,`Back‑offs: ${L.variant.back.sets}×${L.variant.back.reps} @ ${L.variant.back.p}% → <b>${L.loads.bo} ${L.loads.unit}</b>`]); }
         else if(L.loads && L.loads.length){ out += list(L.loads); }
-        out += '<h4>Accessories</h4>'+list(['Weighted Pull‑ups — 4×6–8 @70–75% 1RM or BW to 1–2 RIR','Lat/Upper‑back — 3–4×10–15','Biceps — 2–3×10–15']);
+        out += '<h4>Accessories</h4>'+list(['Overhead Press — 3–4×6–8','Weighted Pull‑ups — 4×6–8','Ring Dips or Muscle-ups — 3–4×quality sets','Handstand Push-ups — 3–5×max quality','Lat/Upper‑back — 3–4×10–15','Biceps — 2–3×10–15']);
         out += '<h4>Plyos</h4>'+list(['Bounds / Pogo / Hurdle hops — low contacts']);
       }
+
+      
+// Inject detailed testing protocol for Week 15
+if(w===15){
+  let proto = '<h4>Testing Protocol (Week 15)</h4>';
+  function testSteps(lift, percents){
+    let steps = percents.map(p=>`${p}% x1`).join(' → ');
+    return `<li><b>${lift}</b>: ${steps}</li>`;
+  }
+  proto += '<ul>';
+  proto += testSteps('Back Squat',[60,70,80,85,90,95,100]);
+  proto += testSteps('Bench Press',[60,70,80,85,90,95,100]);
+  proto += testSteps('Deadlift',[60,70,80,85,90,95,100]);
+  proto += testSteps('Clean',[60,70,75,80,85,90,95]);
+  proto += '</ul>';
+  proto += '<div class="small">Warm up gradually. Stop if technique breaks. Treat Clean as a technical max — quality over load.</div>';
+  out = proto;
+}
 
       document.getElementById('dailyOut').innerHTML = out;
       // Persist daily toggles
@@ -364,10 +540,10 @@
       let sq = parseFloat(document.getElementById('sq').value||0);
       let bp = parseFloat(document.getElementById('bp').value||0);
       let dl = parseFloat(document.getElementById('dl').value||0);
-      let ohp= parseFloat(document.getElementById('ohp').value||0);
+      let cln= parseFloat(document.getElementById('cln').value||0);
       const useTM = document.getElementById('useTM').checked;
-      if(useTM){ sq*=0.9; bp*=0.9; dl*=0.9; ohp*=0.9; }
-      const oneRMs = {SQ:sq, BP:bp, DL:dl, OHP:ohp};
+      if(useTM){ sq*=0.9; bp*=0.9; dl*=0.9; cln*=0.9; }
+      const oneRMs = {SQ:sq, BP:bp, DL:dl, CLN:cln};
 
       const blurb = block==='deload5' ? 'Deload Week — reduce accessory volume ~40–50%.' :
                      block==='deload10'? 'Deload + AMRAPs @70% to estimate e1RM.' :
@@ -387,18 +563,28 @@
         }
       }
 
-      const rows = [
-        {day:'Lower A', main:`SQ — ${mainCell('SQ')}`, key:'Jumps/Accel + RDL/Split Squat'},
-        {day:'Upper A', main:`BP — ${mainCell('BP')}`, key:'MB Chest Pass + Row/Triceps'},
-        {day:'Lower B', main:`DL — ${mainCell('DL')}`, key:'Scoop Toss + Front/Hack + Curl'},
-        {day:'Upper B', main:`OHP — ${mainCell('OHP')}`, key:'Push‑Press (B2–3) + Pull‑ups/Back'}
-      ];
-      let html = `<table><thead><tr><th>Day</th><th>Main Focus</th><th>Key Add‑Ons</th></tr></thead><tbody>`;
-      rows.forEach(r=>{
-        html += `<tr><td>${r.day}</td><td>${r.main}</td><td>${r.key}</td></tr>`;
-      });
-      html += `</tbody></table>`;
-      document.getElementById('weeklyOut').innerHTML = html;
+      
+const rows = [
+  {day:'Lower A', main:`SQ — ${mainCell('SQ')}`, key:'Jumps/Accel + RDL/Split Squat', lift:'SQ'},
+  {day:'Upper A', main:`BP — ${mainCell('BP')}`, key:'MB Chest Pass + Row/Triceps', lift:'BP'},
+  {day:'Lower B', main:`DL — ${mainCell('DL')}`, key:'Scoop Toss + Front/Hack + Curl', lift:'DL'},
+  {day:'Upper B', main:`CLN — ${mainCell('CLN')}`, key:'Push‑Press + Pull‑ups + Gymnastics', lift:'CLN'}
+];
+let htmlTbl = `<table><thead><tr><th>Day</th><th>Main Focus</th><th>Key Add‑Ons</th><th></th></tr></thead><tbody>`;
+rows.forEach((r,i)=>{
+  const liftPlan = plan[r.lift][w-1];
+  const det = setLines(r.lift, liftPlan, oneRMs, toLb);
+  const detailId = `detail_${i}`;
+  htmlTbl += `<tr><td>${r.day}</td><td>${r.main}</td><td>${r.key}</td>
+    <td><button class="btn secondary" onclick="const d=document.getElementById('${detailId}'); d.style.display=d.style.display==='none'?'block':'none';">Details</button></td></tr>`;
+  htmlTbl += `<tr id="${detailId}" style="display:none"><td colspan="4">
+    <b>Warm-up:</b> <ul>`+det.warmLines.map(x=>`<li>${x}</li>`).join('')+`</ul>
+    <b>Work:</b> <ul>`+det.workLines.map(x=>`<li>${x}</li>`).join('')+`</ul>
+  </td></tr>`;
+});
+htmlTbl += `</tbody></table>`;
+document.getElementById('weeklyOut').innerHTML = htmlTbl;
+
 
       localStorage.setItem('weeklyUI', JSON.stringify({week: w, seasoned, lb: document.getElementById('lbWeekly').checked}));
     }
@@ -409,10 +595,10 @@
       let sq = parseFloat(document.getElementById('sq').value||0);
       let bp = parseFloat(document.getElementById('bp').value||0);
       let dl = parseFloat(document.getElementById('dl').value||0);
-      let ohp= parseFloat(document.getElementById('ohp').value||0);
+      let cln= parseFloat(document.getElementById('cln').value||0);
       const useTM = document.getElementById('useTM').checked;
-      if(useTM){ sq*=0.9; bp*=0.9; dl*=0.9; ohp*=0.9; }
-      const oneRMs = {SQ:sq, BP:bp, DL:dl, OHP:ohp};
+      if(useTM){ sq*=0.9; bp*=0.9; dl*=0.9; cln*=0.9; }
+      const oneRMs = {SQ:sq, BP:bp, DL:dl, CLN:cln};
 
       let html = `<table><thead><tr><th>Week</th>`;
       lifts.forEach(L => html += `<th>${names[L]}</th>`);
@@ -444,7 +630,7 @@
         sq: document.getElementById('sq').value,
         bp: document.getElementById('bp').value,
         dl: document.getElementById('dl').value,
-        ohp: document.getElementById('ohp').value,
+        cln: document.getElementById('cln').value,
         lb: document.getElementById('lb').checked,
         useTM: document.getElementById('useTM').checked
       };
@@ -458,7 +644,7 @@
         if(d.sq) document.getElementById('sq').value = d.sq;
         if(d.bp) document.getElementById('bp').value = d.bp;
         if(d.dl) document.getElementById('dl').value = d.dl;
-        if(d.ohp) document.getElementById('ohp').value = d.ohp;
+        if(d.cln) document.getElementById('cln').value = d.cln;
         if(typeof d.lb==='boolean') document.getElementById('lb').checked = d.lb;
         if(typeof d.useTM==='boolean') document.getElementById('useTM').checked = d.useTM;
         document.getElementById('status').textContent = 'Loaded';
@@ -480,9 +666,38 @@
       if(!document.getElementById('sq').value){ document.getElementById('sq').value = 140; }
       if(!document.getElementById('bp').value){ document.getElementById('bp').value = 100; }
       if(!document.getElementById('dl').value){ document.getElementById('dl').value = 180; }
-      if(!document.getElementById('ohp').value){ document.getElementById('ohp').value = 60; }
+      if(!document.getElementById('cln').value){ document.getElementById('cln').value = 60; }
       showCalcTable();
     });
+
+
+// Make Daily/Weekly respond to 1RM and toggle changes instantly
+['sq','bp','dl','cln'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', ()=>{ showCalcTable(); renderDaily(); renderWeekly(); });
+  el.addEventListener('change', ()=>{ showCalcTable(); renderDaily(); renderWeekly(); });
+});
+['useTM','lb'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('change', ()=>{ showCalcTable(); renderDaily(); renderWeekly(); });
+});
+// Keep Daily/Weekly lb/seasoned toggles in sync with each other
+document.getElementById('lbDaily').addEventListener('change', ()=>{
+  document.getElementById('lbWeekly').checked = document.getElementById('lbDaily').checked;
+  renderWeekly();
+});
+document.getElementById('lbWeekly').addEventListener('change', ()=>{
+  document.getElementById('lbDaily').checked = document.getElementById('lbWeekly').checked;
+  renderDaily();
+});
+document.getElementById('seasonedDaily').addEventListener('change', ()=>{
+  document.getElementById('seasonedWeekly').checked = document.getElementById('seasonedDaily').checked;
+  renderWeekly();
+});
+document.getElementById('seasonedWeekly').addEventListener('change', ()=>{
+  document.getElementById('seasonedDaily').checked = document.getElementById('seasonedWeekly').checked;
+  renderDaily();
+});
 
     // Daily/Weekly UI events
     document.getElementById('weekSelect').addEventListener('change', renderDaily);
