@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Training Plan — JS Clean</title>
+  <title>Training Plan — JS Clean (Reps + e1RM)</title>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0f1115">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -44,12 +44,15 @@
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace}
     a.exlink{ color:#ff9800; text-decoration:none; border-bottom:1px dotted #ff9800 }
     a.exlink:active, a.exlink:focus, a.exlink:hover{ text-decoration:underline }
+    .mini{font-size:11px;color:var(--muted)}
+    .inpwrap{display:flex;gap:6px;align-items:center}
+    .inpwrap input[type="number"]{width:92px}
   </style>
 </head>
 <body>
   <header>
     <h1>15‑Week Training Plan — JS Clean</h1>
-    <div class="sub">Reliable build: per‑set logging • session maxes • orange tutorial links</div>
+    <div class="sub">Per‑set logging (weight + reps) • e1RM estimates</div>
   </header>
 
   <div class="tabs" id="tabs">
@@ -65,7 +68,7 @@
         <div class="row" style="justify-content:space-between;align-items:center">
           <div>
             <h3 style="margin:0 0 8px 0">Daily Planner</h3>
-            <div class="small">Enter actual weights for each set. Accessories: log top set below.</div>
+            <div class="small">Log the **actual** weight and reps for each set. Accessories: log top set (weight + reps).</div>
           </div>
           <div class="row" style="gap:6px">
             <label class="switch"><input id="seasonedDaily" type="checkbox">Seasoned</label>
@@ -118,7 +121,7 @@
       </div>
       <div class="card">
         <strong>Session Maxes (All Movements)</strong>
-        <div class="small">Highest logged weights across all weeks/days for main lifts + accessories.</div>
+        <div class="small">Shows your heaviest **logged set** by movement with reps and an estimated 1RM (Epley: <span class="mono">e1RM = w × (1 + r/30)</span>).</div>
         <div id="maxesWrap" style="margin-top:8px"></div>
       </div>
     </section>
@@ -143,14 +146,11 @@
     function lbToKg(x){ return x/2.20462; }
     function fmtKgLb(kg, toLb){ return toLb ? Math.round(kgToLb(kg))+' lb' : kg.toFixed(1)+' kg'; }
     function blockForWeek(w){ if(w>=1&&w<=4) return 1; if(w===5) return 'deload5'; if(w>=6&&w<=9) return 2; if(w===10) return 'deload10'; if(w>=11&&w<=14) return 3; if(w===15) return 'test15'; }
+    function epley(weightKg, reps){ if(!reps || reps<=1) return weightKg; return weightKg*(1+reps/30); }
 
     // ---------- Tutorials (YouTube search links) ----------
-    function yt(name){
-      const q = encodeURIComponent(name+' tutorial technique');
-      return 'https://www.youtube.com/results?search_query='+q;
-    }
+    function yt(name){ const q = encodeURIComponent(name+' tutorial technique'); return 'https://www.youtube.com/results?search_query='+q; }
     function linkify(text){
-      // only link known movement names; keep others as plain text
       const keys = ['Back Squat','Front Squat','Deadlift','Romanian Deadlift','RDL','Dumbbell Bench Press','Incline DB Bench','Overhead Press','Ring Dips','Muscle-ups','Handstand Push-ups','Pull-up','Box Jumps','Countermovement Jumps','Pogo Jumps','Bounds','Med-Ball Chest Pass','Med-Ball Scoop Toss','Farmer’s Carry','Suitcase Carry','Pallof Press','Ab Rollout','Calf Raise','Clean','Weighted Pull‑ups','Facepulls','Rear Delt Rows','DB Biceps Curls','Bulgarian Split Squat','Hack Squat','Hamstring Curl'];
       let out = text;
       keys.forEach(k=>{
@@ -196,9 +196,109 @@
         {w:15,s:"Test 1RM Clean",p:[]}
       ]
     };
-    const names = {SQ:"Back Squat", BP:"Dumbbell Bench Press", DL:"Deadlift", CLN:"Clean"};
 
-    // ---------- Warmups ----------
+    // ---------- Storage (kg + reps) ----------
+    function storeGet(){ try{ return JSON.parse(localStorage.getItem('sessionLoads')||'{}'); }catch(e){ return {}; } }
+    function storeSet(obj){ localStorage.setItem('sessionLoads', JSON.stringify(obj)); }
+    function keyFor(w, day, lift, section, idx){ return `W${w}|${day}|${lift}|${section}|${idx}`; }
+    function accKey(w, day, name){ return `ACC|W${w}|${day}|${name}`; }
+    function dailyToLb(){ return document.getElementById('lbDaily').checked || document.getElementById('lb').checked; }
+
+    function saveSetPair(w, day, lift, section, idx){
+      const wt = document.getElementById(`wt_${w}_${day}_${lift}_${section}_${idx}`).value;
+      const rp = document.getElementById(`rp_${w}_${day}_${lift}_${section}_${idx}`).value;
+      const toLb = dailyToLb();
+      const store = storeGet();
+      const k = keyFor(w, day, lift, section, idx);
+      if((wt===''||wt==null) && (rp===''||rp==null)){
+        delete store[k];
+      } else {
+        let kg = Number(wt||0);
+        if(toLb) kg = lbToKg(kg);
+        store[k] = {kg: kg, reps: (rp===''? null : Number(rp))};
+      }
+      storeSet(store); buildSessionMaxes();
+    }
+    function getSetPairDisplay(w, day, lift, section, idx){
+      const toLb = dailyToLb();
+      const store = storeGet();
+      const k = keyFor(w, day, lift, section, idx);
+      let rec = store[k];
+      if(rec==null) return {wt:'', rp:''};
+      if(typeof rec === 'number'){ // migrate old value
+        rec = {kg: rec, reps: ''};
+      }
+      const wt = toLb ? Math.round(kgToLb(rec.kg||0)) : Number(rec.kg||0).toFixed(1);
+      const rp = (rec.reps==null ? '' : String(rec.reps));
+      return {wt, rp};
+    }
+    function saveAccessoryPair(w, day, name){
+      const wt = document.getElementById(`aw_${w}_${day}_${name}`).value;
+      const rp = document.getElementById(`ar_${w}_${day}_${name}`).value;
+      const toLb = dailyToLb();
+      const store = storeGet();
+      const k = accKey(w, day, name);
+      if((wt===''||wt==null) && (rp===''||rp==null)){
+        delete store[k];
+      } else {
+        let kg = Number(wt||0);
+        if(toLb) kg = lbToKg(kg);
+        store[k] = {kg: kg, reps: (rp===''? null : Number(rp))};
+      }
+      storeSet(store); buildSessionMaxes();
+    }
+    function getAccessoryPairDisplay(w, day, name){
+      const toLb = dailyToLb();
+      const store = storeGet();
+      let rec = store[accKey(w, day, name)];
+      if(rec==null) return {wt:'', rp:''};
+      if(typeof rec === 'number'){ rec = {kg: rec, reps: ''}; }
+      const wt = toLb ? Math.round(kgToLb(rec.kg||0)) : Number(rec.kg||0).toFixed(1);
+      const rp = (rec.reps==null ? '' : String(rec.reps));
+      return {wt, rp};
+    }
+
+    // ---------- Max table (by heaviest weight) ----------
+    function computeHeaviestSets(){
+      const s = storeGet(), best = {};
+      function consider(name, whereKey, kg, reps){
+        const cur = best[name];
+        if(!cur || kg > cur.kg || (kg===cur.kg && (reps||0) > (cur.reps||0))){
+          best[name] = {kg, reps, where: whereKey};
+        }
+      }
+      Object.entries(s).forEach(([k,v])=>{
+        let name;
+        let rec = v;
+        if(typeof rec === 'number'){ rec = {kg: rec, reps: null}; }
+        if(k.startsWith('ACC|')){ name = k.split('|').slice(3).join('|'); }
+        else{
+          const lift = k.split('|')[2];
+          name = (lift==='SQ'?'Back Squat': lift==='BP'?'Dumbbell Bench Press': lift==='DL'?'Deadlift': lift==='CLN'?'Clean': lift);
+        }
+        consider(name, k, rec.kg||0, rec.reps);
+      });
+      return best;
+    }
+    function parseWhere(k){
+      if(k.startsWith('ACC|')){ const p=k.split('|'); return {week:p[1].replace('W',''), day:p[2]}; }
+      const p=k.split('|'); return {week:p[0].replace('W',''), day:p[1]};
+    }
+    function buildSessionMaxes(){
+      const toLb = document.getElementById('lb').checked;
+      const best = computeHeaviestSets();
+      const rows = Object.entries(best).map(([name,info])=>{
+        const w = parseWhere(info.where);
+        const wtDisp = fmtKgLb(info.kg, toLb);
+        const repsDisp = (info.reps!=null && info.reps!=='') ? ` × ${info.reps}` : '';
+        const e1 = epley(info.kg, Number(info.reps||1));
+        const e1Disp = fmtKgLb(e1, toLb);
+        return `<tr><td>${name}</td><td>${wtDisp}${repsDisp}</td><td>${e1Disp}</td><td>W${w.week} — ${w.day}</td></tr>`;
+      });
+      document.getElementById('maxesWrap').innerHTML = rows.length? `<table><thead><tr><th>Movement</th><th>Top Set</th><th>e1RM</th><th>When</th></tr></thead><tbody>${rows.join('')}</tbody></table>` : '<div class="small">No logged sets yet — enter weights & reps in Daily view to populate this table.</div>';
+    }
+
+    // ---------- Warmups & rendering ----------
     function warmupsFor(liftKey, targetPct){
       const t = targetPct || 60;
       if(liftKey==='SQ'){
@@ -228,185 +328,13 @@
       return [{pct:40,reps:5},{pct:55,reps:3}];
     }
 
-    // ---------- Storage (always in kg) ----------
-    function storeGet(){
-      try{ return JSON.parse(localStorage.getItem('sessionLoads')||'{}'); }catch(e){ return {}; }
-    }
-    function storeSet(obj){ localStorage.setItem('sessionLoads', JSON.stringify(obj)); }
-    function keyFor(w, day, lift, section, idx){ return `W${w}|${day}|${lift}|${section}|${idx}`; }
-    function accKey(w, day, name){ return `ACC|W${w}|${day}|${name}`; }
-    function dailyToLb(){ return document.getElementById('lbDaily').checked || document.getElementById('lb').checked; }
-
-    function saveSetValue(w, day, lift, section, idx, val){
-      const toLb = dailyToLb();
-      const store = storeGet();
-      const k = keyFor(w, day, lift, section, idx);
-      if(val==='' || val===null){ delete store[k]; }
-      else{
-        let n = Number(val);
-        if(toLb) n = lbToKg(n);
-        store[k] = n; // store kg
-      }
-      storeSet(store); buildSessionMaxes(); // refresh
-    }
-    function getSetValueDisplay(w, day, lift, section, idx){
-      const toLb = dailyToLb();
-      const store = storeGet();
-      const k = keyFor(w, day, lift, section, idx);
-      const kg = store[k];
-      if(kg==null) return '';
-      return toLb ? Math.round(kgToLb(kg)) : Number(kg).toFixed(1);
-    }
-    function saveAccessoryTop(w, day, name, val){
-      const toLb = dailyToLb();
-      const store = storeGet();
-      const k = accKey(w, day, name);
-      if(val==='' || val===null){ delete store[k]; }
-      else{
-        let n = Number(val);
-        if(toLb) n = lbToKg(n);
-        store[k] = n;
-      }
-      storeSet(store); buildSessionMaxes();
-    }
-    function getAccessoryTopDisplay(w, day, name){
-      const toLb = dailyToLb();
-      const store = storeGet();
-      const kg = store[accKey(w, day, name)];
-      if(kg==null) return '';
-      return toLb ? Math.round(kgToLb(kg)) : Number(kg).toFixed(1);
-    }
-
-    // ---------- Max table ----------
-    function computeMaxes(){
-      const s = storeGet(), maxes = {};
-      Object.entries(s).forEach(([k,v])=>{
-        let name;
-        if(k.startsWith('ACC|')){ name = k.split('|').slice(3).join('|'); }
-        else{
-          const lift = k.split('|')[2];
-          name = (lift==='SQ'?'Back Squat': lift==='BP'?'Dumbbell Bench Press': lift==='DL'?'Deadlift': lift==='CLN'?'Clean': lift);
-        }
-        if(!maxes[name] || v>maxes[name].max){ maxes[name] = {max:v, where:k}; }
-      });
-      return maxes;
-    }
-    function parseWhere(k){
-      if(k.startsWith('ACC|')){ const p=k.split('|'); return {week:p[1].replace('W',''), day:p[2]}; }
-      const p=k.split('|'); return {week:p[0].replace('W',''), day:p[1]};
-    }
-    function buildSessionMaxes(){
-      const toLb = document.getElementById('lb').checked;
-      const m = computeMaxes();
-      const rows = Object.entries(m).map(([name,info])=>{
-        const w = parseWhere(info.where); const kg = info.max;
-        const disp = fmtKgLb(kg, toLb);
-        return `<tr><td>${name}</td><td>${disp}</td><td>W${w.week} — ${w.day}</td></tr>`;
-      });
-      document.getElementById('maxesWrap').innerHTML = rows.length? `<table><thead><tr><th>Movement</th><th>Max Used</th><th>When</th></tr></thead><tbody>${rows.join('')}</tbody></table>` : '<div class="small">No logged sets yet — enter weights in Daily view to populate this table.</div>';
-    }
-
-    // ---------- Renderers ----------
-    function pctLoadsForWeek(liftKey, week, oneRMs, toLb){
-      const item = plan[liftKey][week-1];
-      const one = oneRMs[liftKey]||0;
-      const loads = (item.p||[]).map(p=>{
-        const kg = one*p/100;
-        return fmtKgLb(roundLoad(kg,toLb), toLb)+' @'+p+'%';
-      });
-      return {text:item.s, loads, pcts:item.p||[]};
-    }
-
-    function warmWorkBlocks(liftCode, w, oneRMs, toLb, container){
-      const item = plan[liftCode][w-1];
-      const target = (item.p && item.p.length ? item.p[0] : 60);
-      const warms = warmupsFor(liftCode, target);
-      // Warm-ups
-      let warm = '<h5>Warm-up</h5><ul>';
-      warms.forEach((wu,i)=>{
-        const kg = roundLoad((oneRMs[liftCode]||0)*wu.pct/100, toLb);
-        const disp = fmtKgLb(kg,toLb);
-        const val = getSetValueDisplay(w, currentDay(), liftCode, 'warm', i);
-        warm += `<li>${wu.pct}% × ${wu.reps} → <b>${disp}</b><div class="row" style="margin:6px 0"><input type="number" inputmode="decimal" placeholder="${toLb?'log lb':'log kg'}" value="${val}" oninput="saveSetValue(${w}, '${currentDay()}', '${liftCode}', 'warm', ${i}, this.value)"></div></li>`;
-      });
-      warm += '</ul>';
-      // Work
-      let work = '<h5>Work</h5><ul>';
-      if(item.p && item.p.length===1){
-        const p = item.p[0];
-        const kg = roundLoad((oneRMs[liftCode]||0)*p/100, toLb);
-        const disp = fmtKgLb(kg,toLb);
-        const mSets = (item.s.match(/(\d+)\s*×/)||[null,null])[1];
-        const mReps = (item.s.match(/×\s*(\d+)\s*@/)||[null,null])[1];
-        const line = (mSets&&mReps)? `${mSets}×${mReps} @ ${p}% → <b>${disp}</b>` : `${item.s} → <b>${disp}</b>`;
-        const val = getSetValueDisplay(w, currentDay(), liftCode, 'work', 0);
-        work += `<li>${line}<div class="row" style="margin:6px 0"><input type="number" inputmode="decimal" placeholder="${toLb?'log lb':'log kg'}" value="${val}" oninput="saveSetValue(${w}, '${currentDay()}', '${liftCode}', 'work', 0, this.value)"></div></li>`;
-      } else if(item.p && item.p.length>1){
-        item.p.forEach((p,i)=>{
-          const kg = roundLoad((oneRMs[liftCode]||0)*p/100, toLb);
-          const disp = fmtKgLb(kg,toLb);
-          const val = getSetValueDisplay(w, currentDay(), liftCode, 'work', i);
-          work += `<li>@ ${p}% → <b>${disp}</b><div class="row" style="margin:6px 0"><input type="number" inputmode="decimal" placeholder="${toLb?'log lb':'log kg'}" value="${val}" oninput="saveSetValue(${w}, '${currentDay()}', '${liftCode}', 'work', ${i}, this.value)"></div></li>`;
-        });
-      } else {
-        work += `<li>${item.s}</li>`;
-      }
-      work += '</ul>';
-      container.innerHTML += warm + work;
-    }
-
-    function accessoriesFor(day){
-      if(day==='Lower A'){
-        return ['RDL — barbell, 3–4×8–10 (hamstrings/glutes; keep back flat)',
-                'Bulgarian Split Squat — dumbbells at sides, 3×10–12/leg (quad focus, balance)',
-                'Standing Calf Raise — dumbbells or machine, 3×12–15 (slow stretch at bottom)',
-                'Core anti‑flexion — ab rollout (barbell/wheel) or suitcase carries (dumbbells)'];
-      }
-      if(day==='Upper A'){
-        return ['Incline DB Bench — dumbbells, 3–4×8–12 (upper chest)',
-                'One‑Arm DB Row — dumbbell + bench support, 4×8–10 (lats/back)',
-                'Ring Dips — rings, 3–4×AMRAP (weighted if strong; chest/triceps)',
-                'Triceps — rope pushdown (band/cable) or dumbbell skullcrushers, 3×10–15'];
-      }
-      if(day==='Lower B'){
-        return ['Front Squat — barbell, 3–4×6–8 (quads/torso strength)',
-                'Hack Squat — barbell behind legs or machine, 3×6–8 (quads)',
-                'Hamstring Curl — machine/band/sliders, 3–4×10–15 (hamstrings)',
-                'Farmer’s/Suitcase Carry — heavy dumbbells, 3 rounds (grip/core)',
-                'Anti‑rotation — Pallof Press (band/cable)'];
-      }
-      // Upper B
-      return ['Overhead Press — DBs or barbell, 3–4×6–8 (delts/triceps)',
-              'Weighted Pull‑ups — dip belt or DB between feet, 4×6–8 (lats/biceps)',
-              'Muscle-ups — rings/bar, 3–4×quality sets (skill/strength)',
-              'Handstand Push-ups — wall‑assisted or free, 3–5×quality (shoulders)',
-              'Facepulls / Rear Delt Rows — bands/cables, 3×12–15 (upper back)',
-              'DB Biceps Curls — dumbbells, 2–3×10–15 (biceps)'];
-    }
-
-    function primersFor(day, block){
-      if(day==='Lower A'){
-        if(block===1) return ['Box Jumps — bodyweight, 4×3','Countermovement Jumps — bodyweight, 4×3'];
-        if(block===2) return ['Squat + Jump Contrast — 2–3 jump squats @20–25% after sets'];
-        return ['Jump Squats/Trap‑bar Jumps — 5–6×3 @20–30% 1RM'];
-      }
-      if(day==='Lower B'){
-        return ['Med-Ball Scoop Toss — 4×3','Pogo Jumps — bodyweight, 2–3×20–30 sec','Bounds — bodyweight, 2–3×10–15 contacts'];
-      }
-      if(day==='Upper A'){
-        return ['Med-Ball Chest Pass — medicine ball 3–5 kg, 5×3'];
-      }
-      return ['Tall Clean Drill / Push Jerk Primer — barbell or PVC, 3–4×3'];
-    }
-
     function currentDay(){ return document.getElementById('daySelect').value; }
 
     function renderDaily(){
       const w = parseInt(document.getElementById('weekSelect').value);
       const day = currentDay();
       const block = blockForWeek(w);
-      const toLb = dailyToLb();
-      const seasoned = document.getElementById('seasonedDaily').checked;
+      const toLb = document.getElementById('lbDaily').checked || document.getElementById('lb').checked;
 
       let sq = parseFloat(document.getElementById('sq').value||0);
       let bp = parseFloat(document.getElementById('bp').value||0);
@@ -425,34 +353,112 @@
       const out = document.getElementById('dailyOut');
       out.innerHTML = '';
 
+      function warmWorkBlocks(liftCode){
+        const item = plan[liftCode][w-1];
+        const target = (item.p && item.p.length ? item.p[0] : 60);
+        const warms = warmupsFor(liftCode, target);
+        // Warm-ups
+        let warm = '<h5>Warm-up</h5><ul>';
+        warms.forEach((wu,i)=>{
+          const kg = roundLoad((oneRMs[liftCode]||0)*wu.pct/100, toLb);
+          const disp = fmtKgLb(kg,toLb);
+          const cur = getSetPairDisplay(w, day, liftCode, 'warm', i);
+          warm += `<li>${wu.pct}% × ${wu.reps} → <b>${disp}</b>
+            <div class="row mini">Log:</div>
+            <div class="inpwrap"><input id="wt_${w}_${day}_${liftCode}_warm_${i}" type="number" inputmode="decimal" placeholder="${toLb?'lb':'kg'}" value="${cur.wt}" oninput="saveSetPair(${w}, '${day}', '${liftCode}', 'warm', ${i})">
+            <input id="rp_${w}_${day}_${liftCode}_warm_${i}" type="number" inputmode="numeric" placeholder="reps" value="${cur.rp}" oninput="saveSetPair(${w}, '${day}', '${liftCode}', 'warm', ${i})"></div>
+          </li>`;
+        });
+        warm += '</ul>';
+        // Work
+        let work = '<h5>Work</h5><ul>';
+        if(item.p && item.p.length===1){
+          const p = item.p[0];
+          const kg = roundLoad((oneRMs[liftCode]||0)*p/100, toLb);
+          const disp = fmtKgLb(kg,toLb);
+          const mSets = (item.s.match(/(\d+)\s*×/)||[null,null])[1];
+          const mReps = (item.s.match(/×\s*(\d+)\s*@/)||[null,null])[1];
+          const line = (mSets&&mReps)? `${mSets}×${mReps} @ ${p}% → <b>${disp}</b>` : `${item.s} → <b>${disp}</b>`;
+          const cur = getSetPairDisplay(w, day, liftCode, 'work', 0);
+          work += `<li>${line}
+            <div class="row mini">Log:</div>
+            <div class="inpwrap"><input id="wt_${w}_${day}_${liftCode}_work_0" type="number" inputmode="decimal" placeholder="${toLb?'lb':'kg'}" value="${cur.wt}" oninput="saveSetPair(${w}, '${day}', '${liftCode}', 'work', 0)">
+            <input id="rp_${w}_${day}_${liftCode}_work_0" type="number" inputmode="numeric" placeholder="reps" value="${cur.rp}" oninput="saveSetPair(${w}, '${day}', '${liftCode}', 'work', 0)"></div>
+          </li>`;
+        } else if(item.p && item.p.length>1){
+          item.p.forEach((p,i)=>{
+            const kg = roundLoad((oneRMs[liftCode]||0)*p/100, toLb);
+            const disp = fmtKgLb(kg,toLb);
+            const cur = getSetPairDisplay(w, day, liftCode, 'work', i);
+            work += `<li>@ ${p}% → <b>${disp}</b>
+              <div class="row mini">Log:</div>
+              <div class="inpwrap"><input id="wt_${w}_${day}_${liftCode}_work_${i}" type="number" inputmode="decimal" placeholder="${toLb?'lb':'kg'}" value="${cur.wt}" oninput="saveSetPair(${w}, '${day}', '${liftCode}', 'work', ${i})">
+              <input id="rp_${w}_${day}_${liftCode}_work_${i}" type="number" inputmode="numeric" placeholder="reps" value="${cur.rp}" oninput="saveSetPair(${w}, '${day}', '${liftCode}', 'work', ${i})"></div>
+            </li>`;
+          });
+        } else {
+          work += `<li>${item.s}</li>`;
+        }
+        work += '</ul>';
+        out.innerHTML += warm + work;
+      }
+
       // Primers
+      function primersFor(day, block){
+        if(day==='Lower A'){
+          if(block===1) return ['Box Jumps — bodyweight, 4×3','Countermovement Jumps — bodyweight, 4×3'];
+          if(block===2) return ['Squat + Jump Contrast — 2–3 jump squats @20–25% after sets'];
+          return ['Jump Squats/Trap‑bar Jumps — 5–6×3 @20–30% 1RM'];
+        }
+        if(day==='Lower B'){
+          return ['Med-Ball Scoop Toss — 4×3','Pogo Jumps — bodyweight, 2–3×20–30 sec','Bounds — bodyweight, 2–3×10–15 contacts'];
+        }
+        if(day==='Upper A'){
+          return ['Med-Ball Chest Pass — medicine ball 3–5 kg, 5×3'];
+        }
+        return ['Tall Clean Drill / Push Jerk Primer — barbell or PVC, 3–4×3'];
+      }
       out.innerHTML += '<h4>Power</h4>' + list(primersFor(day, block));
 
-      // Main lift for the day
+      // Main
       if(day==='Lower A'){
         out.innerHTML += `<h4>Main — ${linkify('Back Squat')}</h4><div class="mono">${plan.SQ[w-1].s}</div>`;
-        if(w!==15) warmWorkBlocks('SQ', w, oneRMs, toLb, out);
+        if(w!==15) warmWorkBlocks('SQ');
       } else if(day==='Upper A'){
         out.innerHTML += `<h4>Main — ${linkify('Dumbbell Bench Press')}</h4><div class="mono">${plan.BP[w-1].s}</div>`;
-        if(w!==15) warmWorkBlocks('BP', w, oneRMs, toLb, out);
+        if(w!==15) warmWorkBlocks('BP');
       } else if(day==='Lower B'){
         out.innerHTML += `<h4>Main — ${linkify('Deadlift')}</h4><div class="mono">${plan.DL[w-1].s}</div>`;
-        if(w!==15) warmWorkBlocks('DL', w, oneRMs, toLb, out);
+        if(w!==15) warmWorkBlocks('DL');
       } else {
         out.innerHTML += `<h4>Main — ${linkify('Clean')}</h4><div class="mono">${plan.CLN[w-1].s}</div>`;
-        if(w!==15) warmWorkBlocks('CLN', w, oneRMs, toLb, out);
+        if(w!==15) warmWorkBlocks('CLN');
       }
 
       // Accessories + logging
-      out.innerHTML += '<h4>Accessories</h4>'+list(accessoriesFor(day));
+      function accessoriesFor(day){
+        if(day==='Lower A'){
+          return ['RDL','Bulgarian Split Squat','Standing Calf Raise','Ab Rollout / Suitcase Carry'];
+        }
+        if(day==='Upper A'){
+          return ['Incline DB Bench','One‑Arm DB Row','Ring Dips','Triceps (Pushdown/DB Skullcrusher)'];
+        }
+        if(day==='Lower B'){
+          return ['Front Squat','Hack Squat','Hamstring Curl','Farmer’s/Suitcase Carry','Pallof Press'];
+        }
+        return ['Overhead Press','Weighted Pull‑ups','Muscle-ups','Handstand Push-ups','Facepulls / Rear Delt Rows','DB Biceps Curls'];
+      }
+      out.innerHTML += '<h4>Accessories</h4>'+list(accessoriesFor(day).map(n=>n+' — log top set below'));
       out.innerHTML += '<h4>Accessory Logging</h4>';
-      const accNames = {'Lower A':['RDL','Bulgarian Split Squat','Standing Calf Raise','Ab Rollout / Suitcase Carry'],
-                        'Upper A':['Incline DB Bench','One‑Arm DB Row','Ring Dips','Triceps (Pushdown/DB Skullcrusher)'],
-                        'Lower B':['Front Squat','Hack Squat','Hamstring Curl','Farmer’s/Suitcase Carry','Pallof Press'],
-                        'Upper B':['Overhead Press','Weighted Pull‑ups','Muscle-ups','Handstand Push-ups','Facepulls / Rear Delt Rows','DB Biceps Curls']}[day];
-      accNames.forEach((nm,i)=>{
-        const val = getAccessoryTopDisplay(w, day, nm);
-        out.innerHTML += `<div class="row" style="margin:6px 0;justify-content:space-between"><div class="small" style="flex:1">${linkify(nm)}</div><input type="number" inputmode="decimal" placeholder="${toLb?'top set lb':'top set kg'}" value="${val}" oninput="saveAccessoryTop(${w}, '${day}', '${nm}', this.value)"></div>`;
+      accessoriesFor(day).forEach((nm,i)=>{
+        const cur = getAccessoryPairDisplay(w, day, nm);
+        out.innerHTML += `<div class="row" style="margin:6px 0;justify-content:space-between;align-items:center">
+          <div class="small" style="flex:1">${linkify(nm)}</div>
+          <div class="inpwrap">
+            <input id="aw_${w}_${day}_${nm}" type="number" inputmode="decimal" placeholder="${toLb?'lb':'kg'}" value="${cur.wt}" oninput="saveAccessoryPair(${w}, '${day}', '${nm}')">
+            <input id="ar_${w}_${day}_${nm}" type="number" inputmode="numeric" placeholder="reps" value="${cur.rp}" oninput="saveAccessoryPair(${w}, '${day}', '${nm}')">
+          </div>
+        </div>`;
       });
 
       if(day==='Lower A'){
@@ -485,9 +491,7 @@
         {day:'Upper B', main:'Clean', key:'Jerk Primer + OHP + Pull-ups + Gymnastics'}
       ];
       let html = `<table><thead><tr><th>Day</th><th>Main Lift</th><th>Key Add‑Ons</th></tr></thead><tbody>`;
-      rows.forEach(r=>{
-        html += `<tr><td>${r.day}</td><td>${r.main}</td><td>${r.key}</td></tr>`;
-      });
+      rows.forEach(r=>{ html += `<tr><td>${r.day}</td><td>${r.main}</td><td>${r.key}</td></tr>`; });
       html += `</tbody></table>`;
       document.getElementById('weeklyOut').innerHTML = html;
     }
