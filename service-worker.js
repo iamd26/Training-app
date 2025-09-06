@@ -1,7 +1,7 @@
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open('tp-cache-v9').then(cache => cache.addAll([
+    caches.open('tp-cache-v10').then(cache => cache.addAll([
       './',
       './index.html',
       './manifest.webmanifest',
@@ -13,7 +13,7 @@ self.addEventListener('install', event => {
 });
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(k => k !== 'tp-cache-v9').map(k => caches.delete(k))))
+    caches.keys().then(keys => Promise.all(keys.filter(k => k !== 'tp-cache-v10').map(k => caches.delete(k))))
     .then(() => self.clients.claim())
   );
 });

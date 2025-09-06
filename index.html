@@ -270,48 +270,31 @@ function setLines(liftKey, weekItem, oneRMs, toLb){
 }
 
 
-// --- YouTube tutorials map ---
+
+// --- YouTube tutorials map (curated) ---
+// Weightlifting & powerlifts
 const YT = {
-  "Back Squat":"https://www.youtube.com/watch?v=ultWZbUMPL8",
-  "Front Squat":"https://www.youtube.com/watch?v=tlfahNdNPPI",
-  "Hack Squat":"https://www.youtube.com/watch?v=RPR3eT6R9Cs",
-  "Romanian Deadlift":"https://www.youtube.com/watch?v=JCXUYuzwNrM",
-  "RDL":"https://www.youtube.com/watch?v=JCXUYuzwNrM",
-  "Deadlift":"https://www.youtube.com/watch?v=op9kVnSso6Q",
+  "Back Squat":"https://www.youtube.com/watch?v=SbgHegC6lEs",
+  "Front Squat":"https://www.youtube.com/watch?v=7pyxT5hqmQY",
+  "Deadlift":"https://www.youtube.com/watch?v=Y1IGeJEXpF4",
+  "Romanian Deadlift":"https://www.youtube.com/watch?v=_oyxCn2iSjU",
+  "RDL":"https://www.youtube.com/watch?v=_oyxCn2iSjU",
   "Bench Press":"https://www.youtube.com/watch?v=gRVjAtPip0Y",
-  "Incline DB Bench":"https://www.youtube.com/watch?v=8iPEnn-ltC8",
-  "Clean":"https://www.youtube.com/watch?v=B-aVuyhvLHU",
-  "OHP":"https://www.youtube.com/watch?v=B-aVuyhvLHU",
-  "Push-Press":"https://www.youtube.com/watch?v=iaBVSJm78ko",
-  "Pull-up":"https://www.youtube.com/watch?v=eGo4IYlbE5g",
-  "Weighted Pull-ups":"https://www.youtube.com/watch?v=eGo4IYlbE5g",
+  "Overhead Press":"https://www.youtube.com/watch?v=wol7Hko8RhY",
+  "Clean":"https://www.youtube.com/watch?v=oQIaWLrB318",
+  "Power Clean":"https://www.youtube.com/watch?v=YG8M_-11C2A",
+  "Push Press":"https://www.youtube.com/watch?v=yklSQG1_Ovc",
+  "Push Jerk":"https://www.youtube.com/watch?v=Om7vLD6x8W0",
+  "Ring Dips":"https://www.youtube.com/watch?v=NbUOZOKzmIQ",
+  "Muscle-ups":"https://www.youtube.com/watch?v=Jv7L8j-SZYc",
+  "Handstand Push-ups":"https://www.youtube.com/watch?v=YWlO1RGzkmE",
   "Barbell Row":"https://www.youtube.com/watch?v=vT2GjY_Umpw",
-  "Row":"https://www.youtube.com/watch?v=vT2GjY_Umpw",
-  "Hamstring Curl":"https://www.youtube.com/watch?v=Q27k6mG7FvI",
-  "Split Squat":"https://www.youtube.com/watch?v=2C-uNgKwPLE",
-  "Walking Lunge":"https://www.youtube.com/watch?v=1N0GZK7f3S8",
-  "Calf Raise":"https://www.youtube.com/watch?v=YMmgqO8Jo-k",
-  "Core (anti-flexion)":"https://www.youtube.com/watch?v=DTcEMyQpw2I",
-  "Carries":"https://www.youtube.com/watch?v=8g8LKs64h-0",
-  "Med-Ball Chest Pass":"https://www.youtube.com/watch?v=FhS7b2YqvSA",
-  "Med-Ball Scoop Toss":"https://www.youtube.com/watch?v=tiN9ZtG6u1g",
-  "Box Jump":"https://www.youtube.com/watch?v=52r_Ul5k03g",
-  "Countermovement Jump":"https://www.youtube.com/watch?v=IqE2w2nQ4t8",
-  "Jump Squat":"https://www.youtube.com/watch?v=VbTg8k8m6sI",
-  "Trap-bar Jump":"https://www.youtube.com/watch?v=jx2xU7s0W48",
-  "Pogo Hops":"https://www.youtube.com/watch?v=OUiAqG2YpGg",
-  "Bounds":"https://www.youtube.com/watch?v=Jf4fe2bC5mY",
-  "5-10-5":"https://www.youtube.com/watch?v=3vY1Z3K2CzY",
-  "Accelerations":"https://www.youtube.com/watch?v=JYg8hQw4uDM",
-  "MB Chest Pass":"https://www.youtube.com/watch?v=FhS7b2YqvSA",
-  "MB Scoop Toss":"https://www.youtube.com/watch?v=tiN9ZtG6u1g"
+  "Pull-up":"https://www.youtube.com/watch?v=eGo4IYlbE5g"
 };
 function linkify(name){
-  // If a known key appears in the string, wrap it with a link
   for(const key of Object.keys(YT)){
     if(name.toLowerCase().includes(key.toLowerCase())){
       const url = YT[key];
-      // Return with anchor
       return name.replace(new RegExp(key, 'i'), `<a href="${url}" target="_blank" rel="noopener">${key}</a>`);
     }
   }
@@ -437,7 +420,7 @@ function list(items){
         if(block===2) out += '<h4>Power</h4>'+list(['Squat + Jump Contrast — 2–3 jumps @20–25% after sets']);
         if(block===3) out += '<h4>Power</h4>'+list(['Jump Squats/Trap‑bar Jumps — 5–6×3 @20–30% 1RM']);
         const L = pctLoadsForWeek('SQ', w, oneRMs, toLb, seasoned);
-        out += `<h4>Main — Back Squat</h4><div class="mono">${L.text}</div>`;
+        out += `<h4>Main — ${linkify("Back Squat")}</h4><div class="mono">${L.text}</div>`;
         // Detailed sets for SQ
         if(w !== 15){
           const _wk = plan['SQ'][w-1];
@@ -456,7 +439,7 @@ function list(items){
       if(day==='Upper A'){
         out += '<h4>Power</h4>'+list(['Med‑Ball Chest Pass — 5×3 (3–5% BW)']);
         const L = pctLoadsForWeek('BP', w, oneRMs, toLb, seasoned);
-        out += `<h4>Main — Bench Press</h4><div class="mono">${L.text}</div>`;
+        out += `<h4>Main — ${linkify("Bench Press")}</h4><div class="mono">${L.text}</div>`;
         // Detailed sets for BP
         if(w !== 15){
           const _wk = plan['BP'][w-1];
@@ -472,7 +455,7 @@ function list(items){
       if(day==='Lower B'){
         out += '<h4>Power</h4>'+list(['Med‑Ball Scoop Toss — 4×3']);
         const L = pctLoadsForWeek('DL', w, oneRMs, toLb, seasoned);
-        out += `<h4>Main — Deadlift</h4><div class="mono">${L.text}</div>`;
+        out += `<h4>Main — ${linkify("Deadlift")}</h4><div class="mono">${L.text}</div>`;
         // Detailed sets for DL
         if(w !== 15){
           const _wk = plan['DL'][w-1];
@@ -492,7 +475,7 @@ function list(items){
         if(block===1) out += '<h4>Power</h4>'+list(['(Optional) Light MB work or push power 3×3']);
         if(block===2 || block===3) out += '<h4>Power</h4>'+list(['Push‑Press — 5×3 @60–70% OHP 1RM']);
         const L = pctLoadsForWeek('CLN', w, oneRMs, toLb, seasoned);
-        out += `<h4>Main — Clean</h4><div class="mono">${L.text}</div>`;
+        out += `<h4>Main — ${linkify("Clean")}</h4><div class="mono">${L.text}</div>`;
         // Detailed sets for CLN
         if(w !== 15){
           const _wk = plan['CLN'][w-1];
@@ -564,13 +547,14 @@ if(w===15){
       }
 
       
+
 const rows = [
-  {day:'Lower A', main:`SQ — ${mainCell('SQ')}`, key:'Jumps/Accel + RDL/Split Squat', lift:'SQ'},
-  {day:'Upper A', main:`BP — ${mainCell('BP')}`, key:'MB Chest Pass + Row/Triceps', lift:'BP'},
-  {day:'Lower B', main:`DL — ${mainCell('DL')}`, key:'Scoop Toss + Front/Hack + Curl', lift:'DL'},
-  {day:'Upper B', main:`CLN — ${mainCell('CLN')}`, key:'Push‑Press + Pull‑ups + Gymnastics', lift:'CLN'}
+  {day:'Lower A', main:'Back Squat', key:'Jumps/Accel + RDL/Split Squat', lift:'SQ'},
+  {day:'Upper A', main:'Bench Press', key:'MB Chest Pass + Row/Triceps', lift:'BP'},
+  {day:'Lower B', main:'Deadlift', key:'Scoop Toss + Front/Hack + Curl', lift:'DL'},
+  {day:'Upper B', main:'Clean', key:'Push‑Press + Pull‑ups + Gymnastics', lift:'CLN'}
 ];
-let htmlTbl = `<table><thead><tr><th>Day</th><th>Main Focus</th><th>Key Add‑Ons</th><th></th></tr></thead><tbody>`;
+let htmlTbl = `<table><thead><tr><th>Day</th><th>Main Lift</th><th>Key Add‑Ons</th><th></th></tr></thead><tbody>`;
 rows.forEach((r,i)=>{
   const liftPlan = plan[r.lift][w-1];
   const det = setLines(r.lift, liftPlan, oneRMs, toLb);
@@ -584,6 +568,7 @@ rows.forEach((r,i)=>{
 });
 htmlTbl += `</tbody></table>`;
 document.getElementById('weeklyOut').innerHTML = htmlTbl;
+
 
 
       localStorage.setItem('weeklyUI', JSON.stringify({week: w, seasoned, lb: document.getElementById('lbWeekly').checked}));
