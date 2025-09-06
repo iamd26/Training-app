@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Training Plan — Programming Build</title>
+  <title>Training Plan — Programming v2</title>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0f1115">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,8 +25,8 @@
     section.active{display:block}
     .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px}
     label{display:inline-flex;align-items:center;gap:6px;margin:6px 8px 6px 0;font-size:14px;color:var(--muted)}
-    input[type="number"], select{padding:8px;border-radius:10px;border:1px solid var(--border);background:#0b0d12;color:var(--text)}
-    input[type="number"]{width:90px}
+    input[type="number"], select{padding:8px;border-radius:10px;border:1px solid var(--border);background:#0b0d12;color:var(--text")}
+    input[type="number"]{width:100px}
     .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
     .btn{appearance:none;border:none;border-radius:10px;background:var(--accent);color:#001721;font-weight:700;padding:10px 12px;font-size:14px}
     .btn.secondary{background:#263244;color:var(--text);border:1px solid var(--border)}
@@ -42,12 +42,14 @@
     .footer{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(0deg,rgba(15,17,21,.95),rgba(15,17,21,.6));backdrop-filter:blur(8px);border-top:1px solid var(--border);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
     .pill{border:1px solid var(--border);background:#0b0d12;border-radius:12px;padding:6px 10px;color:var(--muted);font-size:12px}
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace}
+    a.exlink{ color:#ff9800; text-decoration:none; border-bottom:1px dotted #ff9800 }
+    a.exlink:active, a.exlink:focus, a.exlink:hover{ text-decoration:underline }
   </style>
 </head>
 <body>
   <header>
-    <h1>15‑Week Training Plan — Programming Build</h1>
-    <div class="sub">Hypertrophy + Athletic Performance • modular app-ready</div>
+    <h1>15‑Week Training Plan — Programming v2</h1>
+    <div class="sub">Hypertrophy + Athletic Performance • per-set logging • session maxes</div>
   </header>
 
   <div class="tabs" id="tabs">
@@ -58,13 +60,12 @@
   </div>
 
   <main>
-    <!-- Daily View -->
     <section id="daily" class="active">
       <div class="card">
         <div class="row" style="justify-content:space-between;align-items:center">
           <div>
             <h3 style="margin:0 0 8px 0">Daily Planner</h3>
-            <div class="small">Pick Week & Day. You’ll see athletic primers, main lifts with warm-ups/work, accessories, and notes. Exercise names link to tutorials.</div>
+            <div class="small">Enter actual weights for each set. All movements (including accessories) will show up in the Session Maxes table.</div>
           </div>
           <div class="row" style="gap:6px">
             <label class="switch"><input id="seasonedDaily" type="checkbox">Seasoned</label>
@@ -72,9 +73,7 @@
           </div>
         </div>
         <div class="row" style="gap:10px;margin-top:8px">
-          <label>Week
-            <select id="weekSelect"></select>
-          </label>
+          <label>Week <select id="weekSelect"></select></label>
           <label>Day
             <select id="daySelect">
               <option>Lower A</option>
@@ -89,14 +88,11 @@
       <div class="card" id="dailyOut"></div>
     </section>
 
-    <!-- Weekly Overview (no % in overview; details toggle shows warm-up/work) -->
     <section id="weekly">
       <div class="card">
         <h3>Weekly Overview</h3>
         <div class="row" style="gap:10px">
-          <label>Week
-            <select id="weekSelectWeekly"></select>
-          </label>
+          <label>Week <select id="weekSelectWeekly"></select></label>
           <label class="switch"><input id="seasonedWeekly" type="checkbox">Seasoned</label>
           <label class="switch"><input id="lbWeekly" type="checkbox">lb</label>
         </div>
@@ -105,7 +101,6 @@
       <div class="card" id="weeklyOut"></div>
     </section>
 
-    <!-- Calculator (1RM) -->
     <section id="calc">
       <div class="card">
         <div class="row">
@@ -121,28 +116,24 @@
           <button class="btn secondary" id="saveBtn">Save</button>
           <span class="pill" id="status">Unsaved</span>
         </div>
-        <div class="small" style="margin-top:6px">Note: Bench work is performed with <b>dumbbells</b>; % calculations still anchor to your barbell Bench 1RM for consistency.</div>
+        <div class="small" style="margin-top:6px">DB Bench is the main press; %s anchored to barbell Bench 1RM for consistency.</div>
       </div>
       <div class="card">
         <strong>Main Lifts Progression</strong>
         <div class="small">Prescriptions shown as <span class="mono">sets×reps @ %</span>. Loads auto‑calc and round to the nearest 2.5 kg (or 5 lb).</div>
         <div id="tableWrap"></div>
       </div>
+      <div class="card">
+        <strong>Session Maxes (All Movements)</strong>
+        <div class="small">Aggregates your logged top weights (kg/lb) for both main lifts and accessories across all weeks and days.</div>
+        <div id="maxesWrap" style="margin-top:8px"></div>
+      </div>
     </section>
 
-    <!-- About / Philosophy -->
     <section id="about">
       <div class="card">
         <h3>Programming Philosophy</h3>
-        <p>Three phases with deloads and testing, blending <b>hypertrophy</b> with <b>athletic performance</b> (jumps, throws, speed). Main lifts: Back Squat, <b>Dumbbell Bench Press</b> (as main pressing stimulus), Deadlift, and Clean. Overhead Press moves to accessories.</p>
-        <ul>
-          <li><b>Block 1 (Weeks 1–4): Base & Hypertrophy</b> — higher reps, primers to build springiness; movement quality first.</li>
-          <li><b>Week 5: Deload</b> — volume reduced ~40–50%; technique singles and mini-tests.</li>
-          <li><b>Block 2 (Weeks 6–9): Intensification</b> — %s rise, reps drop; contrast/power emphasis.</li>
-          <li><b>Week 10: Deload + AMRAPs</b> — easy work with one AMRAP @70% to estimate e1RM.</li>
-          <li><b>Block 3 (Weeks 11–14): Peak Power/Strength</b> — heavy doubles/singles with low contact plyos.</li>
-          <li><b>Week 15: Testing</b> — distributed testing; minimal accessories.</li>
-        </ul>
+        <p>Blocks with deloads and testing. Main lifts: Back Squat, Dumbbell Bench Press (main press), Deadlift, Clean. Tailored warm-ups; athletic primers (jumps/throws/bounds) before lower days. Gymnastics skills as accessories.</p>
       </div>
     </section>
   </main>
@@ -158,7 +149,48 @@
     function fmt(x, toLb){ return toLb ? (x*2.20462).toFixed(0) : x.toFixed(1); }
     function blockForWeek(w){ if(w>=1&&w<=4) return 1; if(w===5) return 'deload5'; if(w>=6&&w<=9) return 2; if(w===10) return 'deload10'; if(w>=11&&w<=14) return 3; if(w===15) return 'test15'; }
 
-    // --- YouTube tutorials map (curated) ---
+    // Session logging
+    function keyFor(w, day, lift, section, idx){ return `W${w}|${day}|${lift}|${section}|${idx}`; }
+    function readLog(){ try{ return JSON.parse(localStorage.getItem('sessionLoads')||'{}'); }catch(e){ return {}; } }
+    function writeLog(obj){ localStorage.setItem('sessionLoads', JSON.stringify(obj)); }
+    function saveSetValue(w, day, lift, section, idx, val){
+      const store = readLog(); const k = keyFor(w, day, lift, section, idx);
+      if(val==='' || val===null){ delete store[k]; } else { store[k] = Number(val); }
+      writeLog(store); buildSessionMaxes();
+    }
+    function getSetValue(w, day, lift, section, idx){ const store = readLog(); return store[keyFor(w, day, lift, section, idx)] ?? ''; }
+    function accKey(w, day, name){ return `ACC|W${w}|${day}|${name}`; }
+    function saveAccessoryTop(w, day, name, val){ const s=readLog(); const k=accKey(w,day,name); if(val===''||val===null){ delete s[k]; } else { s[k]=Number(val); } writeLog(s); buildSessionMaxes(); }
+    function getAccessoryTop(w, day, name){ const s=readLog(); return s[accKey(w,day,name)] ?? ''; }
+    function computeMaxes(){
+      const s = readLog(), maxes = {};
+      Object.entries(s).forEach(([k,v])=>{
+        let name;
+        if(k.startsWith('ACC|')){ name = k.split('|').slice(3).join('|'); }
+        else{
+          const lift = k.split('|')[2];
+          name = (lift==='SQ'?'Back Squat': lift==='BP'?'Dumbbell Bench Press': lift==='DL'?'Deadlift': lift==='CLN'?'Clean': lift);
+        }
+        if(!maxes[name] || v>maxes[name].max){ maxes[name] = {max:v, where:k}; }
+      });
+      return maxes;
+    }
+    function parseWhere(k){
+      if(k.startsWith('ACC|')){ const p=k.split('|'); return {week:p[1].replace('W',''), day:p[2]}; }
+      const p=k.split('|'); return {week:p[0].replace('W',''), day:p[1]};
+    }
+    function buildSessionMaxes(){
+      const toLb = document.getElementById('lb').checked;
+      const m = computeMaxes();
+      const rows = Object.entries(m).map(([name,info])=>{
+        const w = parseWhere(info.where); const val = info.max;
+        const disp = toLb ? Math.round(val*2.20462)+' lb' : val.toFixed(1)+' kg';
+        return `<tr><td>${name}</td><td>${disp}</td><td>W${w.week} — ${w.day}</td></tr>`;
+      });
+      document.getElementById('maxesWrap').innerHTML = rows.length? `<table><thead><tr><th>Movement</th><th>Max Used</th><th>When</th></tr></thead><tbody>${rows.join('')}</tbody></table>` : '<div class="small">No logged sets yet — enter weights in Daily view to populate this table.</div>';
+    }
+
+    // Tutorials map + linkify
     const YT = {
       "Back Squat":"https://www.youtube.com/watch?v=SbgHegC6lEs",
       "Front Squat":"https://www.youtube.com/watch?v=7pyxT5hqmQY",
@@ -182,7 +214,6 @@
       "Box Jumps":"https://www.youtube.com/watch?v=52r_Ul5k03g",
       "Countermovement Jumps":"https://www.youtube.com/watch?v=IqE2w2nQ4t8",
       "Pogo Jumps":"https://www.youtube.com/watch?v=OUiAqG2YpGg",
-      "Pogo Hops":"https://www.youtube.com/watch?v=OUiAqG2YpGg",
       "Bounds":"https://www.youtube.com/watch?v=Jf4fe2bC5mY",
       "Med-Ball Chest Pass":"https://www.youtube.com/watch?v=FhS7b2YqvSA",
       "Med-Ball Scoop Toss":"https://www.youtube.com/watch?v=tiN9ZtG6u1g",
@@ -196,16 +227,14 @@
       for(const key of Object.keys(YT)){
         if(name.toLowerCase().includes(key.toLowerCase())){
           const url = YT[key];
-          return name.replace(new RegExp(key, 'i'), `<a href="${url}" target="_blank" rel="noopener">${key}</a>`);
+          return name.replace(new RegExp(key,'i'), `<a class="exlink" href="${url}" target="_blank" rel="noopener">${key}</a>`);
         }
       }
       return name;
     }
-    function list(items){
-      return '<ul>'+items.map(x=>`<li>${linkify(x)}</li>`).join('')+'</ul>';
-    }
+    function list(items){ return '<ul>'+items.map(x=>`<li>${linkify(x)}</li>`).join('')+'</ul>'; }
 
-    // Plan data (SQ, DB Bench (as BP %), DL, Clean)
+    // Plan data (same as previous build)
     const plan = {
       SQ:[
         {w:1,s:"5×8 @65%",p:[65]},{w:2,s:"5×8 @67.5%",p:[67.5]},{w:3,s:"4×8 @70%",p:[70]},{w:4,s:"4×8 @72.5%",p:[72.5]},
@@ -243,10 +272,9 @@
     const lifts = ["SQ","BP","DL","CLN"];
     const names = {SQ:"Back Squat", BP:"Dumbbell Bench Press", DL:"Deadlift", CLN:"Clean"};
 
-    // Seasoned variant (top + back-offs) when a single % is used
     function seasonedVariant(item){
       if(!item.p || item.p.length!==1) return null;
-      const m = item.s.match(/(\d+)×(\d+)/);
+      const m = item.s.match(/(\\d+)×(\\d+)/);
       if(!m) return null;
       const reps = parseInt(m[2],10);
       const basePct = item.p[0];
@@ -272,7 +300,6 @@
       return {text:item.s, loads, unit: toLb?'lb':'kg'};
     }
 
-    // Tailored warm-ups
     function warmupsFor(liftKey, targetPct){
       const t = targetPct || 60;
       if(liftKey==='SQ'){
@@ -313,42 +340,34 @@
       let workLines = [];
       if(workPcts.length===1){
         const p = workPcts[0];
-        const repsMatch = (weekItem.s.match(/×(\d+)\s*@/) || [null, null])[1];
+        const repsMatch = (weekItem.s.match(/×(\\d+)\\s*@/) || [null, null])[1];
         const reps = repsMatch ? parseInt(repsMatch,10) : null;
-        const setsMatch = (weekItem.s.match(/(\d+)\s*×/) || [null, null])[1];
+        const setsMatch = (weekItem.s.match(/(\\d+)\\s*×/) || [null, null])[1];
         const sets = setsMatch ? parseInt(setsMatch,10) : null;
         const load = roundLoad(one*p/100, toLb);
-        if(sets && reps){
-          workLines.push(`${sets}×${reps} @ ${p}% → <b>${fmt(load,toLb)} ${toLb?'lb':'kg'}</b>`);
-        } else {
-          workLines.push(`${weekItem.s} → <b>${fmt(load,toLb)} ${toLb?'lb':'kg'}</b>`);
-        }
+        if(sets && reps){ workLines.push(`${sets}×${reps} @ ${p}% → <b>${fmt(load,toLb)} ${toLb?'lb':'kg'}</b>`); }
+        else{ workLines.push(`${weekItem.s} → <b>${fmt(load,toLb)} ${toLb?'lb':'kg'}</b>`); }
       }else if(workPcts.length>1){
-        workLines = workPcts.map(p=>{
-          const load = roundLoad(one*p/100, toLb);
-          return `@ ${p}% → <b>${fmt(load,toLb)} ${toLb?'lb':'kg'}</b>`;
-        });
+        workLines = workPcts.map(p=>{ const load = roundLoad(one*p/100, toLb); return `@ ${p}% → <b>${fmt(load,toLb)} ${toLb?'lb':'kg'}</b>`; });
         workLines.unshift(weekItem.s);
-      }else{
-        workLines = [weekItem.s];
-      }
+      }else{ workLines = [weekItem.s]; }
       return {warmLines, workLines};
     }
 
+    const lifts = ["SQ","BP","DL","CLN"];
+    const names = {SQ:"Back Squat", BP:"Dumbbell Bench Press", DL:"Deadlift", CLN:"Clean"};
+
     function weekOverview(week){
       const block = blockForWeek(week);
-      let msg = block===1?'Block 1: Base & Hypertrophy': block===2?'Block 2: Intensification': block===3?'Block 3: Peak Power/Strength': block==='deload5'?'Deload Week 5 — reduce accessories 40–50%': block==='deload10'?'Deload Week 10 + AMRAP @70%':'Testing Week 15';
-      return msg;
+      return block===1?'Block 1: Base & Hypertrophy': block===2?'Block 2: Intensification': block===3?'Block 3: Peak Power/Strength': block==='deload5'?'Deload Week 5 — reduce accessories 40–50%': block==='deload10'?'Deload Week 10 + AMRAP @70%':'Testing Week 15';
     }
 
     // Populate week selects
     const weekSel = document.getElementById('weekSelect');
     const weekSelW = document.getElementById('weekSelectWeekly');
-    for(let i=1;i<=15;i++){
-      const o = document.createElement('option'); o.textContent = i; o.value = i; weekSel.appendChild(o);
-      const o2= document.createElement('option'); o2.textContent= i; o2.value = i; weekSelW.appendChild(o2);
-    }
-    weekSel.value = "1"; weekSelW.value = "1";
+    for(let i=1;i<=15;i++){ const o=document.createElement('option'); o.textContent=i; o.value=i; weekSel.appendChild(o);
+      const o2=document.createElement('option'); o2.textContent=i; o2.value=i; weekSelW.appendChild(o2); }
+    weekSel.value="1"; weekSelW.value="1";
 
     function renderDaily(){
       const w = parseInt(weekSel.value);
@@ -366,11 +385,9 @@
       if(useTM){ sq*=0.9; bp*=0.9; dl*=0.9; cln*=0.9; }
       const oneRMs = {SQ:sq, BP:bp, DL:dl, CLN:cln};
 
-      // Blurb
       let blurb = weekOverview(w);
       document.getElementById('dailyMeta').innerHTML = `<b>Week ${w}</b> — ${day}<br><span class="small">${blurb}</span>`;
 
-      // Builders
       let out = '';
 
       if(day==='Lower A'){
@@ -381,10 +398,36 @@
         out += `<h4>Main — ${linkify('Back Squat')}</h4><div class="mono">${L.text}</div>`;
         if(w!==15){
           const det = setLines('SQ', plan['SQ'][w-1], oneRMs, toLb);
-          out += '<h5>Warm-up</h5>'+list(det.warmLines);
-          out += '<h5>Work</h5>'+list(det.workLines);
+          {
+            const items = [];
+            det.warmLines.forEach((txt, i)=>{
+              const id = `in_${w}_${day}_MAIN_${'SQ'}_warm_${i}`;
+              const saved = getSetValue(w, day, 'SQ', 'warm', i);
+              items.push(`${txt} <div class="row" style="margin:6px 0"><input id="${id}" type="number" inputmode="decimal" placeholder="log kg" value="${saved}" oninput="saveSetValue(${w}, '${day}', 'SQ', 'warm', ${i}, this.value)"></div>`);
+            });
+            out += '<h5>Warm-up</h5><ul><li>'+items.join('</li><li>')+'</li></ul>';
+          }
+          {
+            const items = [];
+            det.workLines.forEach((txt, i)=>{
+              const id = `in_${w}_${day}_MAIN_${'SQ'}_work_${i}`;
+              const saved = getSetValue(w, day, 'SQ', 'work', i);
+              items.push(`${txt} <div class="row" style="margin:6px 0"><input id="${id}" type="number" inputmode="decimal" placeholder="log kg" value="${saved}" oninput="saveSetValue(${w}, '${day}', 'SQ', 'work', ${i}, this.value)"></div>`);
+            });
+            out += '<h5>Work</h5><ul><li>'+items.join('</li><li>')+'</li></ul>';
+          }
         }
-        out += '<h4>Accessories</h4>'+list(['RDL — barbell, 3–4×8–10','Bulgarian Split Squat — dumbbells at sides, 3×10–12/leg','Standing Calf Raise — dumbbells or machine, 3×12–15','Core anti‑flexion — ab rollout (barbell/wheel) or suitcase carries (dumbbells)']);
+        out += '<h4>Accessories</h4>'+list(['RDL — barbell, 3–4×8–10 (hamstrings/glutes; keep back flat)','Bulgarian Split Squat — dumbbells at sides, 3×10–12/leg (quad focus, balance)','Standing Calf Raise — dumbbells or machine, 3×12–15 (slow stretch at bottom)','Core anti‑flexion — ab rollout (barbell/wheel) or suitcase carries (dumbbells)']);
+        out += '<h4>Accessory Logging</h4>';
+        (function(){
+          const names = ['RDL','Bulgarian Split Squat','Standing Calf Raise','Ab Rollout / Suitcase Carry'];
+          const items = names.map((nm,i)=>{
+            const id = `acc_${w}_${day}_${i}`;
+            const saved = getAccessoryTop(w, day, nm);
+            return `<div class="row" style="margin:6px 0;justify-content:space-between"><div class="small" style="flex:1">${linkify(nm)}</div><input id="${id}" type="number" inputmode="decimal" placeholder="top set kg" value="${saved}" oninput="saveAccessoryTop(${w}, '${day}', 'Lower A: '+nm, this.value)"></div>`;
+          });
+          out += items.join('');
+        })();
         out += '<h4>Finisher</h4>'+list(['Accelerations — 4–6×20 m (2:00 rest)']);
       }
 
@@ -394,10 +437,36 @@
         out += `<h4>Main — ${linkify('Dumbbell Bench Press')}</h4><div class="mono">${L.text}</div>`;
         if(w!==15){
           const det = setLines('BP', plan['BP'][w-1], oneRMs, toLb);
-          out += '<h5>Warm-up</h5>'+list(det.warmLines);
-          out += '<h5>Work</h5>'+list(det.workLines);
+          {
+            const items = [];
+            det.warmLines.forEach((txt, i)=>{
+              const id = `in_${w}_${day}_MAIN_${'BP'}_warm_${i}`;
+              const saved = getSetValue(w, day, 'BP', 'warm', i);
+              items.push(`${txt} <div class="row" style="margin:6px 0"><input id="${id}" type="number" inputmode="decimal" placeholder="log kg" value="${saved}" oninput="saveSetValue(${w}, '${day}', 'BP', 'warm', ${i}, this.value)"></div>`);
+            });
+            out += '<h5>Warm-up</h5><ul><li>'+items.join('</li><li>')+'</li></ul>';
+          }
+          {
+            const items = [];
+            det.workLines.forEach((txt, i)=>{
+              const id = `in_${w}_${day}_MAIN_${'BP'}_work_${i}`;
+              const saved = getSetValue(w, day, 'BP', 'work', i);
+              items.push(`${txt} <div class="row" style="margin:6px 0"><input id="${id}" type="number" inputmode="decimal" placeholder="log kg" value="${saved}" oninput="saveSetValue(${w}, '${day}', 'BP', 'work', ${i}, this.value)"></div>`);
+            });
+            out += '<h5>Work</h5><ul><li>'+items.join('</li><li>')+'</li></ul>';
+          }
         }
-        out += '<h4>Accessories</h4>'+list(['Incline DB Bench — dumbbells, 3–4×8–12','One‑Arm DB Row — dumbbell + bench support, 4×8–10','Ring Dips — rings, 3–4×AMRAP (weighted if strong)','Triceps — rope pushdown (band/cable) or dumbbell skullcrushers, 3×10–15']);
+        out += '<h4>Accessories</h4>'+list(['Incline DB Bench — dumbbells, 3–4×8–12 (upper chest)','One‑Arm DB Row — dumbbell + bench support, 4×8–10 (lats/back)','Ring Dips — rings, 3–4×AMRAP (weighted if strong; chest/triceps)','Triceps — rope pushdown (band/cable) or dumbbell skullcrushers, 3×10–15']);
+        out += '<h4>Accessory Logging</h4>';
+        (function(){
+          const names = ['Incline DB Bench','One‑Arm DB Row','Ring Dips','Triceps (Pushdown/DB Skullcrusher)'];
+          const items = names.map((nm,i)=>{
+            const id = `acc_${w}_${day}_${i}`;
+            const saved = getAccessoryTop(w, day, nm);
+            return `<div class="row" style="margin:6px 0;justify-content:space-between"><div class="small" style="flex:1">${linkify(nm)}</div><input id="${id}" type="number" inputmode="decimal" placeholder="top set kg" value="${saved}" oninput="saveAccessoryTop(${w}, '${day}', 'Upper A: '+nm, this.value)"></div>`;
+          });
+          out += items.join('');
+        })();
       }
 
       if(day==='Lower B'){
@@ -406,10 +475,36 @@
         out += `<h4>Main — ${linkify('Deadlift')}</h4><div class="mono">${L.text}</div>`;
         if(w!==15){
           const det = setLines('DL', plan['DL'][w-1], oneRMs, toLb);
-          out += '<h5>Warm-up</h5>'+list(det.warmLines);
-          out += '<h5>Work</h5>'+list(det.workLines);
+          {
+            const items = [];
+            det.warmLines.forEach((txt, i)=>{
+              const id = `in_${w}_${day}_MAIN_${'DL'}_warm_${i}`;
+              const saved = getSetValue(w, day, 'DL', 'warm', i);
+              items.push(`${txt} <div class="row" style="margin:6px 0"><input id="${id}" type="number" inputmode="decimal" placeholder="log kg" value="${saved}" oninput="saveSetValue(${w}, '${day}', 'DL', 'warm', ${i}, this.value)"></div>`);
+            });
+            out += '<h5>Warm-up</h5><ul><li>'+items.join('</li><li>')+'</li></ul>';
+          }
+          {
+            const items = [];
+            det.workLines.forEach((txt, i)=>{
+              const id = `in_${w}_${day}_MAIN_${'DL'}_work_${i}`;
+              const saved = getSetValue(w, day, 'DL', 'work', i);
+              items.push(`${txt} <div class="row" style="margin:6px 0"><input id="${id}" type="number" inputmode="decimal" placeholder="log kg" value="${saved}" oninput="saveSetValue(${w}, '${day}', 'DL', 'work', ${i}, this.value)"></div>`);
+            });
+            out += '<h5>Work</h5><ul><li>'+items.join('</li><li>')+'</li></ul>';
+          }
         }
-        out += '<h4>Accessories</h4>'+list(['Front Squat — barbell, 3–4×6–8','Hack Squat — barbell behind legs or machine, 3×6–8','Hamstring Curl — machine/band/sliders, 3–4×10–15','Farmer’s/Suitcase Carry — heavy dumbbells, 3 rounds','Anti‑rotation — Pallof Press (band/cable)']);
+        out += '<h4>Accessories</h4>'+list(['Front Squat — barbell, 3–4×6–8 (quads/torso strength)','Hack Squat — barbell behind legs or machine, 3×6–8 (quads)','Hamstring Curl — machine/band/sliders, 3–4×10–15 (hamstrings)','Farmer’s/Suitcase Carry — heavy dumbbells, 3 rounds (grip/core)','Anti‑rotation — Pallof Press (band/cable)']);
+        out += '<h4>Accessory Logging</h4>';
+        (function(){
+          const names = ['Front Squat','Hack Squat','Hamstring Curl','Farmer’s/Suitcase Carry','Pallof Press'];
+          const items = names.map((nm,i)=>{
+            const id = `acc_${w}_${day}_${i}`;
+            const saved = getAccessoryTop(w, day, nm);
+            return `<div class="row" style="margin:6px 0;justify-content:space-between"><div class="small" style="flex:1">${linkify(nm)}</div><input id="${id}" type="number" inputmode="decimal" placeholder="top set kg" value="${saved}" oninput="saveAccessoryTop(${w}, '${day}', 'Lower B: '+nm, this.value)"></div>`;
+          });
+          out += items.join('');
+        })();
       }
 
       if(day==='Upper B'){
@@ -418,19 +513,44 @@
         out += `<h4>Main — ${linkify('Clean')}</h4><div class="mono">${L.text}</div>`;
         if(w!==15){
           const det = setLines('CLN', plan['CLN'][w-1], oneRMs, toLb);
-          out += '<h5>Warm-up</h5>'+list(det.warmLines);
-          out += '<h5>Work</h5>'+list(det.workLines);
+          {
+            const items = [];
+            det.warmLines.forEach((txt, i)=>{
+              const id = `in_${w}_${day}_MAIN_${'CLN'}_warm_${i}`;
+              const saved = getSetValue(w, day, 'CLN', 'warm', i);
+              items.push(`${txt} <div class="row" style="margin:6px 0"><input id="${id}" type="number" inputmode="decimal" placeholder="log kg" value="${saved}" oninput="saveSetValue(${w}, '${day}', 'CLN', 'warm', ${i}, this.value)"></div>`);
+            });
+            out += '<h5>Warm-up</h5><ul><li>'+items.join('</li><li>')+'</li></ul>';
+          }
+          {
+            const items = [];
+            det.workLines.forEach((txt, i)=>{
+              const id = `in_${w}_${day}_MAIN_${'CLN'}_work_${i}`;
+              const saved = getSetValue(w, day, 'CLN', 'work', i);
+              items.push(`${txt} <div class="row" style="margin:6px 0"><input id="${id}" type="number" inputmode="decimal" placeholder="log kg" value="${saved}" oninput="saveSetValue(${w}, '${day}', 'CLN', 'work', ${i}, this.value)"></div>`);
+            });
+            out += '<h5>Work</h5><ul><li>'+items.join('</li><li>')+'</li></ul>';
+          }
         }
-        out += '<h4>Accessories</h4>'+list(['Overhead Press — DBs or barbell, 3–4×6–8','Weighted Pull‑ups — dip belt or DB between feet, 4×6–8','Muscle-ups — rings/bar, 3–4×quality sets (or progression)','Handstand Push-ups — wall‑assisted or free, 3–5×quality','Facepulls / Rear Delt Rows — bands/cables, 3×12–15','DB Biceps Curls — dumbbells, 2–3×10–15']);
+        out += '<h4>Accessories</h4>'+list(['Overhead Press — DBs or barbell, 3–4×6–8 (delts/triceps)','Weighted Pull‑ups — dip belt or DB between feet, 4×6–8 (lats/biceps)','Muscle-ups — rings/bar, 3–4×quality sets (or progression)','Handstand Push-ups — wall‑assisted or free, 3–5×quality (shoulders)','Facepulls / Rear Delt Rows — bands/cables, 3×12–15 (upper back)','DB Biceps Curls — dumbbells, 2–3×10–15 (biceps)']);
+        out += '<h4>Accessory Logging</h4>';
+        (function(){
+          const names = ['Overhead Press','Weighted Pull‑ups','Muscle-ups','Handstand Push-ups','Facepulls / Rear Delt Rows','DB Biceps Curls'];
+          const items = names.map((nm,i)=>{
+            const id = `acc_${w}_${day}_${i}`;
+            const saved = getAccessoryTop(w, day, nm);
+            return `<div class="row" style="margin:6px 0;justify-content:space-between"><div class="small" style="flex:1">${linkify(nm)}</div><input id="${id}" type="number" inputmode="decimal" placeholder="top set kg" value="${saved}" oninput="saveAccessoryTop(${w}, '${day}', 'Upper B: '+nm, this.value)"></div>`;
+          });
+          out += items.join('');
+        })();
       }
 
-      // Week 15 special protocol
       if(w===15){
         let proto = '<h4>Testing Protocol (Week 15)</h4>';
         function testSteps(lift, percents){ return `<li><b>${lift}</b>: `+percents.map(p=>`${p}% x1`).join(' → ')+`</li>`; }
         proto += '<ul>';
         proto += testSteps('Back Squat',[60,70,80,85,90,95,100]);
-        proto += testSteps('Dumbbell Bench Press',[60,70,80,85,90,95]); // anchored to BP 1RM
+        proto += testSteps('Dumbbell Bench Press',[60,70,80,85,90,95]);
         proto += testSteps('Deadlift',[60,70,80,85,90,95,100]);
         proto += testSteps('Clean',[60,70,75,80,85,90,95]);
         proto += '</ul>';
@@ -447,7 +567,6 @@
       const toLb = document.getElementById('lbWeekly').checked || document.getElementById('lb').checked;
       const seasoned = document.getElementById('seasonedWeekly').checked;
 
-      // 1RMs
       let sq = parseFloat(document.getElementById('sq').value||0);
       let bp = parseFloat(document.getElementById('bp').value||0);
       let dl = parseFloat(document.getElementById('dl').value||0);
@@ -484,7 +603,6 @@
       document.getElementById('weeklyOut').innerHTML = htmlTbl;
     }
 
-    // Calc table
     function showCalcTable(){
       const toLb = document.getElementById('lb').checked;
       let sq = parseFloat(document.getElementById('sq').value||0);
@@ -555,27 +673,23 @@
         document.getElementById(btn.dataset.tab).classList.add('active');
       });
     });
-    document.getElementById('calcBtn').addEventListener('click', showCalcTable);
+    document.getElementById('calcBtn').addEventListener('click', ()=>{ showCalcTable(); buildSessionMaxes(); });
     document.getElementById('saveBtn').addEventListener('click', saveVals);
     document.getElementById('quickCalc').addEventListener('click', ()=>{
       if(!document.getElementById('sq').value){ document.getElementById('sq').value = 180; }
       if(!document.getElementById('bp').value){ document.getElementById('bp').value = 120; }
       if(!document.getElementById('dl').value){ document.getElementById('dl').value = 220; }
       if(!document.getElementById('cln').value){ document.getElementById('cln').value = 110; }
-      showCalcTable();
-      renderDaily();
-      renderWeekly();
+      showCalcTable(); renderDaily(); renderWeekly(); buildSessionMaxes();
     });
-
-    // Sync Daily/Weekly toggles
     ['sq','bp','dl','cln'].forEach(id => {
       const el = document.getElementById(id);
-      el.addEventListener('input', ()=>{ showCalcTable(); renderDaily(); renderWeekly(); });
-      el.addEventListener('change', ()=>{ showCalcTable(); renderDaily(); renderWeekly(); });
+      el.addEventListener('input', ()=>{ showCalcTable(); renderDaily(); renderWeekly(); buildSessionMaxes(); });
+      el.addEventListener('change', ()=>{ showCalcTable(); renderDaily(); renderWeekly(); buildSessionMaxes(); });
     });
     ['useTM','lb'].forEach(id => {
       const el = document.getElementById(id);
-      el.addEventListener('change', ()=>{ showCalcTable(); renderDaily(); renderWeekly(); });
+      el.addEventListener('change', ()=>{ showCalcTable(); renderDaily(); renderWeekly(); buildSessionMaxes(); });
     });
     document.getElementById('lbDaily').addEventListener('change', ()=>{
       document.getElementById('lbWeekly').checked = document.getElementById('lbDaily').checked;
@@ -594,12 +708,13 @@
       renderDaily();
     });
 
-    // Initialize
+    // Init
     if('serviceWorker' in navigator){ window.addEventListener('load', ()=> navigator.serviceWorker.register('./service-worker.js')); }
-    // Populate week selects
+    loadVals();
     showCalcTable();
     renderDaily();
     renderWeekly();
+    buildSessionMaxes();
   </script>
 </body>
 </html>
